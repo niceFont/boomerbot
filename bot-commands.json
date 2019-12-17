@@ -1,0 +1,27 @@
+{
+    "greet": {
+        "identifier": "greet",
+        "privilages": 0,
+        "name": "greet"
+    },
+    "kickme": {
+        "identifier": "kickme",
+        "privilages": 1,
+        "name": "kickme"
+    },
+    "kick": {
+        "identifier": "kick",
+        "privilages": 1,
+        "name": "kick"
+    },
+    "snap": {
+        "identifier": "snap",
+        "privilages": 1,
+        "name": "snap"
+    },
+    "movie": {
+        "identifier": "movie",
+        "privilages": 0,
+        "name": "movie"
+    }
+}
