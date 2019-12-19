@@ -23,5 +23,10 @@
         "identifier": "movie",
         "privilages": 0,
         "name": "movie"
+    },
+    "reminder": {
+        "identifier": "reminder",
+        "privilages": 0,
+        "name": "reminder"
     }
 }

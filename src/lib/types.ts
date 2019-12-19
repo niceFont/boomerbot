@@ -37,3 +37,4 @@ export type Genre = {
 export interface GenreCollection {
     genres: Array<Genre>
 }
+

@@ -13,16 +13,5 @@ export const config = {
 const connection = TeamSpeak.connect(config)
 
 
-/* 
-.then(async ts => {
-const clients = await ts.clientList({ client_type: 0 })
-
-clients.forEach(client => {
-    client.message("Hello!")
-})
-}).catch(e => {
-console.log(e)
-}) */
-
 
 export default connection

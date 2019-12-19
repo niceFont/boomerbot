@@ -9,12 +9,18 @@ class TMDBHandler {
     apiKey: string
     page = 0
     maxPage = 10
+    genreList: GenreCollection
     /**
      * @constructor
      * @param {string} apiKey - Api key provided by User 
      */
     constructor(apiKey: string) {
         this.apiKey = apiKey
+        this.getGenres()
+            .then(genres => {
+                this.genreList = genres
+            })
+            .catch(err => console.error(err))
     }
 
     /**
