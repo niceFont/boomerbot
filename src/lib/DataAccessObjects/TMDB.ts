@@ -1,21 +1,23 @@
 import axios from "axios";
 import { GenreCollection, Genre, MovieCollection } from "../types";
+import { injectable } from "inversify";
 
 
 /**
  * @class
  */
-class TMDBHandler {
-    apiKey: string
+
+@injectable()
+export class TMDB implements ITMDB {
+    apiKey = process.env.TMDB_API_KEY
+    genreList: GenreCollection
     page = 0
     maxPage = 10
-    genreList: GenreCollection
     /**
      * @constructor
      * @param {string} apiKey - Api key provided by User 
      */
-    constructor(apiKey: string) {
-        this.apiKey = apiKey
+    constructor() {
         this.getGenres()
             .then(genres => {
                 this.genreList = genres
@@ -50,4 +52,9 @@ class TMDBHandler {
 
 }
 
-export default TMDBHandler
+export interface ITMDB {
+    apiKey: string
+    genreList: GenreCollection
+    getMoviesByGenre(genre: Genre): Promise<MovieCollection>
+    getGenres(): Promise<GenreCollection>
+}

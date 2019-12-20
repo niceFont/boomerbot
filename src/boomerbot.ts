@@ -1,35 +1,30 @@
 import dotenv from "dotenv"
 dotenv.config()
-import TeamspeakConnection from "./teamspeak/teamspeak";
+
+import "reflect-metadata"
 import { TeamSpeak } from "ts3-nodejs-library";
-import Command from "./lib/commands";
-import ClientDispatcher from "./lib/Dispatchers/clientDispatcher";
+import { IClientService, ClientService } from "./lib/Services/clientService";
+import { AdminService, IAdminService } from "./lib/Services/adminService";
 import Action from "./lib/actions";
-import UserExceptionsHandler from "./lib/Exceptions/Handlers/userExceptionsHandler";
-import AdminDispatcher from "./lib/Dispatchers/adminDispatcher";
+import { UserExceptionsHandler, IUserExceptionsHandler } from "./lib/Exceptions/Handlers/userExceptionsHandler";
+import clientServiceContainer from "./lib/inversify.config";
+import Types from "./lib/inversifyTypes";
 
 
 class BoomerBot {
 
     teamspeak: TeamSpeak
-    clientDispatcher: ClientDispatcher
-    adminDispatcher: AdminDispatcher
-    userExceptionHandler: UserExceptionsHandler
+    clientDispatcher: IClientService
+    adminDispatcher: IAdminService
+    userExceptionHandler: IUserExceptionsHandler
 
     constructor(teamspeak: TeamSpeak) {
         this.teamspeak = teamspeak
-        this.clientDispatcher = new ClientDispatcher(teamspeak)
-        this.adminDispatcher = new AdminDispatcher(teamspeak)
+        this.clientDispatcher = clientServiceContainer.get<IClientService>(Types.ClientService)
+        this.adminDispatcher = new AdminService()
         this.userExceptionHandler = new UserExceptionsHandler(teamspeak)
     }
 
-    async connect(): Promise<void> {
-        try {
-            this.teamspeak = await TeamspeakConnection
-        } catch (error) {
-            console.log(error)
-        }
-    }
 
     async start(): Promise<void> {
 
@@ -73,9 +68,9 @@ class BoomerBot {
 
                         switch (action.command.privilage) {
                             case 0:
-                                await this.clientDispatcher.dispatch(action)
+                                await this.clientDispatcher.dispatch(action, this.teamspeak)
                             case 1:
-                                await this.adminDispatcher.dispatch(action)
+                                await this.adminDispatcher.dispatch(action, this.teamspeak)
                         }
                     }
                 } catch (error) {

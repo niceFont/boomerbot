@@ -1,25 +1,24 @@
-import ClientDispatcher from "../lib/Dispatchers/clientDispatcher";
-import Action from "../lib/actions"
-import { TeamSpeak, TeamSpeakClient } from "ts3-nodejs-library"
-import Command from "../lib/commands";
+import { ClientService } from "../lib/Services/clientService";
+import clientServiceContainer from "../lib/inversify.config";
+import Types from "../lib/inversifyTypes";
+import sinon from "sinon";
 
-describe("ClientDispatcher", () => {
-    let greetfn = jest.fn()
-    ClientDispatcher.prototype.greet = greetfn
-    ClientDispatcher.prototype.tmdb.getGenres = jest.fn(async () => ({ genres: [] }))
-    let instance: ClientDispatcher
+describe("ClientService", () => {
+
+    const clientService = clientServiceContainer.get<ClientService>(Types.ClientService);
+
+    let greetStub: sinon.SinonStub
+
+    beforeEach(() => {
+        greetStub = sinon.stub(clientService, "greet")
+    })
+
+    afterEach(() => {
+        greetStub.restore()
+    })
+
+    it("should call greet method", () => {
 
 
-    instance = new ClientDispatcher(new TeamSpeak({}))
-
-
-
-    expect(instance).toBeInstanceOf(ClientDispatcher)
-    const action = new Action(new Command("greet", 0, "greet"), [], null, null);
-    (async () => {
-        await instance.dispatch(action)
-        expect(greetfn).toBeCalled()
-
-    })()
-
+    })
 })

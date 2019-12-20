@@ -1,6 +1,8 @@
-import Reminder from "./reminder"
+import Reminder from "../reminder"
+import { injectable } from "inversify"
 
-class ReminderDB {
+@injectable()
+export class ReminderDB implements IReminderDB {
     reminders: Array<Reminder>
 
     constructor() {
@@ -43,5 +45,10 @@ class ReminderDB {
     }
 }
 
-
-export default ReminderDB
+export interface IReminderDB {
+    reminders: Array<Reminder>
+    getAllReminders(): Promise<Array<Reminder>>
+    stopReminder(id: string): Promise<void>
+    addReminder(reminder: Reminder): Promise<void>
+    removeReminder(id: string): Promise<void>
+}

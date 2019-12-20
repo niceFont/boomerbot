@@ -1,49 +1,50 @@
-import Dispatcher from "./dispatcher";
+import Service from "./service";
 import { TeamSpeak } from "ts3-nodejs-library";
 import Action from "../actions";
 import UserException from "../Exceptions/userException";
-import TMDBHandler from "../ApiHandlers/TMDB";
-import ReminderDB from "../reminderDB";
+import { ITMDB } from "../DataAccessObjects/TMDB";
+import { IReminderDB } from "../DataAccessObjects/reminderDB";
 import Reminder from "../reminder";
 import { injectable, inject } from "inversify";
 import Types from "../inversifyTypes";
 
 /**
  * @class
- * @implements {Dispatcher}
+ * @implements {Service}
  */
 
 @injectable()
-class ClientDispatcher implements Dispatcher {
-    teamspeak: TeamSpeak
-    reminderDB: ReminderDB
-    tmdb: TMDBHandler
+export class ClientService implements IClientService {
+    protected reminderDB: IReminderDB
+    protected tmdb: ITMDB
 
-    constructor(@inject(Types.TeamSpeak) teamSpeak: TeamSpeak) {
-        this.teamspeak = teamSpeak
-        this.tmdb = new TMDBHandler(process.env.TMDB_API_KEY)
-        this.reminderDB = new ReminderDB()
+    constructor(
+        @inject(Types.TMDB) tmdb: ITMDB,
+        @inject(Types.ReminderDB) reminderDB: IReminderDB
+    ) {
+        this.tmdb = tmdb
+        this.reminderDB = reminderDB
     }
 
-    async dispatch(action: Action): Promise<void> {
+    async dispatch(action: Action, teamspeak: TeamSpeak): Promise<void> {
 
         try {
             switch (action.command.identifier) {
                 case "greet":
-                    await this.greet(action)
+                    await this.greet(action, teamspeak)
                     break
                 case "movie":
-                    await this.getRandomMovie(action)
+                    await this.getRandomMovie(action, teamspeak)
                     break
                 case "reminder":
                     if (action.commandArguments[0] === "add") {
-                        await this.addReminder(action)
+                        await this.addReminder(action, teamspeak)
                     }
                     if (action.commandArguments[0] === "list") {
-                        await this.listAllReminders(action)
+                        await this.listAllReminders(action, teamspeak)
                     }
                     if (action.commandArguments[0] === "remove") {
-                        await this.removeReminder(action)
+                        await this.removeReminder(action, teamspeak)
                     }
                     break
                 default:
@@ -55,7 +56,7 @@ class ClientDispatcher implements Dispatcher {
 
 
     }
-    async removeReminder(action: Action): Promise<void> {
+    async removeReminder(action: Action, teamspeak: TeamSpeak): Promise<void> {
         try {
 
             if (!action.commandArguments.length) throw new Error("No arguments provided.")
@@ -63,27 +64,27 @@ class ClientDispatcher implements Dispatcher {
 
             await this.reminderDB.removeReminder(action.commandArguments[1])
 
-            await this.teamspeak.sendTextMessage(action.invoker.cid, action.targetmode, "Reminder has been successfully removed")
+            await teamspeak.sendTextMessage(action.invoker.cid, action.targetmode, "Reminder has been successfully removed")
         } catch (error) {
             throw new UserException("Error: " + error.message, action.invoker, action.targetmode)
         }
     }
 
-    async listAllReminders(action: Action): Promise<void> {
+    async listAllReminders(action: Action, teamspeak: TeamSpeak): Promise<void> {
         try {
             const reminders = await this.reminderDB.getAllReminders()
             if (!reminders.length) throw new Error("No reminders were found.")
 
             for (let reminder of reminders) {
                 const message = `${reminder.id}         ${reminder.message}         ${reminder.time / 1000}`
-                await this.teamspeak.sendTextMessage(action.invoker.cid, action.targetmode, message)
+                await teamspeak.sendTextMessage(action.invoker.cid, action.targetmode, message)
             }
         } catch (error) {
             throw new UserException("Error: " + error.message, action.invoker, action.targetmode)
         }
     }
 
-    async getRandomMovie(action: Action): Promise<void> {
+    async getRandomMovie(action: Action, teamspeak: TeamSpeak): Promise<void> {
         try {
 
             if (!action.commandArguments.length) throw new Error("No Genre provided.")
@@ -91,13 +92,14 @@ class ClientDispatcher implements Dispatcher {
                 if (genre.name.toLowerCase() === action.commandArguments[0]) {
                     const movies = await this.tmdb.getMoviesByGenre(genre)
                     const randomNumber = Math.abs(Math.floor(Math.random() * movies.results.length - 1))
-                    const randomMovie = movies.results[randomNumber].original_title
-                    await this.teamspeak.sendTextMessage(action.invoker.cid, action.targetmode, randomMovie)
+                    const randomMovie = movies.results[randomNumber]
+                    const message = `${randomMovie.original_title} ${randomMovie.release_date.slice(0, 4)}  score: ${randomMovie.vote_average}  `
+                    await teamspeak.sendTextMessage(action.invoker.cid, action.targetmode, message)
                     return
                 }
             }
 
-            await this.teamspeak.sendTextMessage(action.invoker.cid, action.targetmode, "Genre Not Found")
+            await teamspeak.sendTextMessage(action.invoker.cid, action.targetmode, "Genre Not Found")
             return
         } catch (error) {
             console.log(error)
@@ -106,30 +108,29 @@ class ClientDispatcher implements Dispatcher {
     }
 
 
-    async greet(action: Action): Promise<void> {
+    async greet(action: Action, teamspeak: TeamSpeak): Promise<void> {
         try {
-            await this.teamspeak.sendTextMessage(action.invoker.cid, action.targetmode, `Hello ${action.invoker.nickname} :)`)
+            await teamspeak.sendTextMessage(action.invoker.cid, action.targetmode, `Hello ${action.invoker.nickname} :)`)
         } catch (error) {
             console.log(error.message)
             throw new UserException("Error: " + error.message, action.invoker, action.targetmode)
         }
     }
 
-    async addReminder(action: Action): Promise<void> {
+    async addReminder(action: Action, teamspeak: TeamSpeak): Promise<void> {
         try {
             if (!action.commandArguments.length) throw new Error("Missing arguments after reminder")
             if (typeof action.commandArguments[1] === "undefined") throw new Error("Missing timer in argument list")
             if (typeof action.commandArguments[2] === "undefined") throw new Error("Missing message in argument list")
 
             const time = parseInt(action.commandArguments[1]) * 60 * 1000
-
             const reminder = new Reminder(time, action.commandArguments[2])
             await this.reminderDB.addReminder(reminder)
             await reminder.start(async () => {
-                await this.teamspeak.sendTextMessage(action.invoker.cid, action.targetmode, `Reminder from ${action.invoker.nickname}: ${reminder.message}`)
+                await teamspeak.sendTextMessage(action.invoker.cid, action.targetmode, `Reminder from ${action.invoker.nickname}: ${reminder.message}`)
                 await this.reminderDB.removeReminder(reminder.id)
             })
-            await this.teamspeak.sendTextMessage(action.invoker.cid, action.targetmode, "Reminder has been successfully created.")
+            await teamspeak.sendTextMessage(action.invoker.cid, action.targetmode, "Reminder has been successfully created.")
         } catch (error) {
             throw new UserException("Error: " + error.message, action.invoker, action.targetmode)
         }
@@ -138,5 +139,11 @@ class ClientDispatcher implements Dispatcher {
 
 }
 
+export interface IClientService extends Service {
+    addReminder(action: Action, teamspeak: TeamSpeak): Promise<void>
+    listAllReminders(action: Action, teamspeak: TeamSpeak): Promise<void>
+    removeReminder(action: Action, teamspeak: TeamSpeak): Promise<void>
+    greet(action: Action, teamspeak: TeamSpeak): Promise<void>
+    getRandomMovie(action: Action, teamspeak: TeamSpeak): Promise<void>
+}
 
-export default ClientDispatcher

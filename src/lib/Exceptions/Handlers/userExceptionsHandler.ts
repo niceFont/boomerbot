@@ -4,7 +4,7 @@ import UserException from "../userException"
 /**
  * @class
  */
-class UserExceptionsHandler {
+export class UserExceptionsHandler implements IUserExceptionsHandler {
     teamspeak: TeamSpeak
 
     constructor(teamspeak: TeamSpeak) {
@@ -20,5 +20,9 @@ class UserExceptionsHandler {
     }
 }
 
-export default UserExceptionsHandler
+export interface IUserExceptionsHandler {
+    teamspeak: TeamSpeak
+    logError(err: UserException): Promise<void>
+}
+
 
