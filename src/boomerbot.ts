@@ -5,31 +5,60 @@ import "reflect-metadata"
 import { TeamSpeak } from "ts3-nodejs-library";
 import { IClientService, ClientService } from "./lib/Services/clientService";
 import { AdminService, IAdminService } from "./lib/Services/adminService";
-import Action from "./lib/actions";
+import Action from "./lib/Types/Actions/userActions";
 import { UserExceptionsHandler, IUserExceptionsHandler } from "./lib/Exceptions/Handlers/userExceptionsHandler";
-import clientServiceContainer from "./lib/inversify.config";
+import { clientServiceContainer, botServiceContainer } from "./lib/inversify.config";
 import Types from "./lib/inversifyTypes";
+import { BotSettings } from "./lib/types";
+import { promises as fs } from "fs"
+import { IBotService } from "./lib/Services/botService";
+import { BotAction } from "./lib/Types/Actions/botActions";
 
 
 class BoomerBot {
 
+    settings: BotSettings
     teamspeak: TeamSpeak
-    clientDispatcher: IClientService
-    adminDispatcher: IAdminService
+    clientService: IClientService
+    adminService: IAdminService
+    botService: IBotService
     userExceptionHandler: IUserExceptionsHandler
 
     constructor(teamspeak: TeamSpeak) {
         this.teamspeak = teamspeak
-        this.clientDispatcher = clientServiceContainer.get<IClientService>(Types.ClientService)
-        this.adminDispatcher = new AdminService()
+        this.clientService = clientServiceContainer.get<IClientService>(Types.ClientService)
+        this.adminService = new AdminService()
+        this.botService = botServiceContainer.get<IBotService>(Types.BotService)
         this.userExceptionHandler = new UserExceptionsHandler(teamspeak)
+    }
+
+    async loadSettingsFile(): Promise<void> {
+        try {
+            const buffer = await fs.readFile(__dirname + "/../bot-settings.json")
+            this.settings = JSON.parse(buffer.toString())
+        } catch (error) {
+            throw new Error(error.message)
+        }
+    }
+
+    async loadSettings(): Promise<void> {
+        try {
+            await this.loadSettingsFile()
+
+            if (this.settings.afkPurge) {
+                const afkAction = new BotAction({ identifier: "afkPurge", privilage: 1, name: "afkPurge" }, [])
+                await this.botService.dispatch(afkAction, this.teamspeak)
+            }
+        } catch (error) {
+
+        }
     }
 
 
     async start(): Promise<void> {
 
-
         try {
+            console.log("[Setup] Registering Teamspeak Events...")
             await Promise.all([
                 this.teamspeak.registerEvent("server"),
                 this.teamspeak.registerEvent("channel", 0),
@@ -37,6 +66,9 @@ class BoomerBot {
                 this.teamspeak.registerEvent("textchannel"),
                 this.teamspeak.registerEvent("textprivate")
             ])
+            console.log("[Setup] Loading settings from File...")
+            await this.loadSettings()
+
             this.teamspeak.on("ready", async () => {
                 console.log("BoomerBot successfully connected to the server.")
                 try {
@@ -64,13 +96,13 @@ class BoomerBot {
             this.teamspeak.on("textmessage", async event => {
                 try {
                     if (event.msg.startsWith("!boomer")) {
-                        const action = await Action.extractActionFromMessage(event)
+                        const action = await Action.getActionFromMessage(event)
 
                         switch (action.command.privilage) {
                             case 0:
-                                await this.clientDispatcher.dispatch(action, this.teamspeak)
+                                await this.clientService.dispatch(action, this.teamspeak)
                             case 1:
-                                await this.adminDispatcher.dispatch(action, this.teamspeak)
+                                await this.adminService.dispatch(action, this.teamspeak)
                         }
                     }
                 } catch (error) {

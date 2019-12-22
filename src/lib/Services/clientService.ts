@@ -1,18 +1,18 @@
 import Service from "./service";
 import { TeamSpeak } from "ts3-nodejs-library";
-import Action from "../actions";
+import Action from "../Types/Actions/userActions";
 import UserException from "../Exceptions/userException";
 import { ITMDB } from "../DataAccessObjects/TMDB";
 import { IReminderDB } from "../DataAccessObjects/reminderDB";
-import Reminder from "../reminder";
+import Reminder from "../Types/Reminders/reminder";
 import { injectable, inject } from "inversify";
 import Types from "../inversifyTypes";
+import UserAction from "../Types/Actions/userActions";
 
 /**
  * @class
  * @implements {Service}
  */
-
 @injectable()
 export class ClientService implements IClientService {
     protected reminderDB: IReminderDB
@@ -26,7 +26,7 @@ export class ClientService implements IClientService {
         this.reminderDB = reminderDB
     }
 
-    async dispatch(action: Action, teamspeak: TeamSpeak): Promise<void> {
+    async dispatch(action: UserAction, teamspeak: TeamSpeak): Promise<void> {
 
         try {
             switch (action.command.identifier) {
@@ -56,7 +56,7 @@ export class ClientService implements IClientService {
 
 
     }
-    async removeReminder(action: Action, teamspeak: TeamSpeak): Promise<void> {
+    async removeReminder(action: UserAction, teamspeak: TeamSpeak): Promise<void> {
         try {
 
             if (!action.commandArguments.length) throw new Error("No arguments provided.")
@@ -70,13 +70,13 @@ export class ClientService implements IClientService {
         }
     }
 
-    async listAllReminders(action: Action, teamspeak: TeamSpeak): Promise<void> {
+    async listAllReminders(action: UserAction, teamspeak: TeamSpeak): Promise<void> {
         try {
             const reminders = await this.reminderDB.getAllReminders()
             if (!reminders.length) throw new Error("No reminders were found.")
 
             for (let reminder of reminders) {
-                const message = `${reminder.id}         ${reminder.message}         ${reminder.time / 1000}`
+                const message = `${reminder.id}         ${reminder.message}         ${reminder.timeout / 1000}`
                 await teamspeak.sendTextMessage(action.invoker.cid, action.targetmode, message)
             }
         } catch (error) {
@@ -84,7 +84,7 @@ export class ClientService implements IClientService {
         }
     }
 
-    async getRandomMovie(action: Action, teamspeak: TeamSpeak): Promise<void> {
+    async getRandomMovie(action: UserAction, teamspeak: TeamSpeak): Promise<void> {
         try {
 
             if (!action.commandArguments.length) throw new Error("No Genre provided.")
@@ -108,7 +108,7 @@ export class ClientService implements IClientService {
     }
 
 
-    async greet(action: Action, teamspeak: TeamSpeak): Promise<void> {
+    async greet(action: UserAction, teamspeak: TeamSpeak): Promise<void> {
         try {
             await teamspeak.sendTextMessage(action.invoker.cid, action.targetmode, `Hello ${action.invoker.nickname} :)`)
         } catch (error) {
@@ -117,7 +117,7 @@ export class ClientService implements IClientService {
         }
     }
 
-    async addReminder(action: Action, teamspeak: TeamSpeak): Promise<void> {
+    async addReminder(action: UserAction, teamspeak: TeamSpeak): Promise<void> {
         try {
             if (!action.commandArguments.length) throw new Error("Missing arguments after reminder")
             if (typeof action.commandArguments[1] === "undefined") throw new Error("Missing timer in argument list")
@@ -140,10 +140,10 @@ export class ClientService implements IClientService {
 }
 
 export interface IClientService extends Service {
-    addReminder(action: Action, teamspeak: TeamSpeak): Promise<void>
-    listAllReminders(action: Action, teamspeak: TeamSpeak): Promise<void>
-    removeReminder(action: Action, teamspeak: TeamSpeak): Promise<void>
-    greet(action: Action, teamspeak: TeamSpeak): Promise<void>
-    getRandomMovie(action: Action, teamspeak: TeamSpeak): Promise<void>
+    addReminder(action: UserAction, teamspeak: TeamSpeak): Promise<void>
+    listAllReminders(action: UserAction, teamspeak: TeamSpeak): Promise<void>
+    removeReminder(action: UserAction, teamspeak: TeamSpeak): Promise<void>
+    greet(action: UserAction, teamspeak: TeamSpeak): Promise<void>
+    getRandomMovie(action: UserAction, teamspeak: TeamSpeak): Promise<void>
 }
 

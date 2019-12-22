@@ -1,8 +1,9 @@
-import Command from "./commands"
+import Command from "../Commands/command"
 import { TextMessageEvent, TeamSpeakClient, TextMessageTargetMode } from "ts3-nodejs-library"
-import UserException from "./Exceptions/userException"
+import UserException from "../../Exceptions/userException"
+import IAction from "./action"
 
-class Action {
+class UserAction implements IAction {
     command: Command
     commandArguments: Array<string>
     invoker: TeamSpeakClient
@@ -15,14 +16,14 @@ class Action {
         this.targetmode = targetMode
     }
 
-    static async extractActionFromMessage(event: TextMessageEvent): Promise<Action> {
+    static async getActionFromMessage(event: TextMessageEvent): Promise<UserAction> {
         try {
             const arr = event.msg.slice(8).split(" ")
 
             const command = await Command.getCommandInfo(arr[0])
 
             if (!command) throw new UserException("Given Command is undefined", event.invoker, event.targetmode)
-            return new Action(command, arr.slice(1), event.invoker, event.targetmode)
+            return new UserAction(command, arr.slice(1), event.invoker, event.targetmode)
 
         } catch (err) {
             throw err
@@ -31,4 +32,4 @@ class Action {
 }
 
 
-export default Action
+export default UserAction

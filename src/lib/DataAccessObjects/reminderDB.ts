@@ -1,4 +1,4 @@
-import Reminder from "../reminder"
+import Reminder from "../Types/Reminders/reminder"
 import { injectable } from "inversify"
 
 @injectable()

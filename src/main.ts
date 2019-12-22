@@ -16,7 +16,7 @@ import { TeamSpeak, QueryProtocol } from "ts3-nodejs-library"
         const bot: BoomerBot = new BoomerBot(ts3Connection)
 
         await bot.start()
-        console.log("Bot started")
+        console.log("Bboomer is ready")
 
     } catch (error) {
         console.error(error)

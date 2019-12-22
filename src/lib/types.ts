@@ -38,3 +38,8 @@ export interface GenreCollection {
     genres: Array<Genre>
 }
 
+
+export interface BotSettings {
+    afkPurge: boolean,
+}
+

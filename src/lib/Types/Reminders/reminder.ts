@@ -3,19 +3,19 @@ import { TeamSpeakClient } from "ts3-nodejs-library"
 
 class Reminder {
     id: string
-    time: number
+    timeout: number
     message: string
     timer: NodeJS.Timer
     invoker: TeamSpeakClient
 
-    constructor(time: number, message: string) {
-        this.time = time
+    constructor(timeout: number, message: string) {
+        this.timeout = timeout
         this.message = message
         this.id = uuid.v4().slice(0, 3)
     }
 
     async start(callback: () => void): Promise<void> {
-        this.timer = setTimeout(callback, this.time)
+        this.timer = setTimeout(callback, this.timeout)
     }
 
     async stop(): Promise<void> {
@@ -26,9 +26,9 @@ class Reminder {
         this.message = message
     }
 
-    async setTime(time: number): Promise<void> {
+    async setTimeout(timeout: number): Promise<void> {
         if (this.timer) clearTimeout(this.timer)
-        this.time = time
+        this.timeout = timeout
     }
 }
 

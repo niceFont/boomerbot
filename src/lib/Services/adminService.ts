@@ -1,9 +1,10 @@
 import Service from "./service";
 import { TeamSpeak } from "ts3-nodejs-library";
-import Action from "../actions";
+import Action from "../Types/Actions/userActions";
 import UserException from "../Exceptions/userException";
 import { injectable, inject } from "inversify";
 import Types from "../inversifyTypes";
+import UserAction from "../Types/Actions/userActions";
 
 /**
  * @class
@@ -21,7 +22,7 @@ export class AdminService implements IAdminService {
     /**
      * @param {Action} action - Action fired on TextMessage
      */
-    async dispatch(action: Action, teamspeak: TeamSpeak): Promise<void> {
+    async dispatch(action: UserAction, teamspeak: TeamSpeak): Promise<void> {
         try {
             switch (action.command.identifier) {
                 case "kick":
@@ -37,7 +38,7 @@ export class AdminService implements IAdminService {
     /**
      * @param {Action} action - Action fired on TextMessage
      */
-    async kick(action: Action, teamspeak: TeamSpeak): Promise<void> {
+    async kick(action: UserAction, teamspeak: TeamSpeak): Promise<void> {
         try {
             const users = await teamspeak.clientFind(action.commandArguments[0])
             if (!users.length) throw new Error("No such user exists.")
@@ -49,7 +50,7 @@ export class AdminService implements IAdminService {
         }
     }
 
-    async thanos(action: Action, teamspeak: TeamSpeak): Promise<void> {
+    async thanos(action: UserAction, teamspeak: TeamSpeak): Promise<void> {
         try {
             const clients = await teamspeak.clientList()
 
@@ -66,6 +67,6 @@ export class AdminService implements IAdminService {
 }
 
 export interface IAdminService extends Service {
-    thanos(action: Action, teamspeak: TeamSpeak): Promise<void>
-    kick(action: Action, teamspeak: TeamSpeak): Promise<void>
+    thanos(action: UserAction, teamspeak: TeamSpeak): Promise<void>
+    kick(action: UserAction, teamspeak: TeamSpeak): Promise<void>
 }
