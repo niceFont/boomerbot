@@ -7,6 +7,7 @@ class Reminder {
     message: string
     timer: NodeJS.Timer
     invoker: TeamSpeakClient
+    completed = false
 
     constructor(timeout: number, message: string) {
         this.timeout = timeout
@@ -14,19 +15,23 @@ class Reminder {
         this.id = uuid.v4().slice(0, 3)
     }
 
-    async start(callback: () => void): Promise<void> {
-        this.timer = setTimeout(callback, this.timeout)
+    start(callback: () => Promise<void>): void {
+        this.timer = setTimeout(() => {
+            callback().catch(console.error)
+            this.completed = true
+        }, this.timeout)
     }
 
-    async stop(): Promise<void> {
+    stop(): void {
         clearTimeout(this.timer)
+        this.completed = true
     }
 
-    async setMessage(message: string): Promise<void> {
+    setMessage(message: string): void {
         this.message = message
     }
 
-    async setTimeout(timeout: number): Promise<void> {
+    setTimeout(timeout: number): void {
         if (this.timer) clearTimeout(this.timer)
         this.timeout = timeout
     }

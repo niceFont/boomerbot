@@ -32,22 +32,14 @@ class BoomerBot {
         this.userExceptionHandler = new UserExceptionsHandler(teamspeak)
     }
 
-    async loadSettingsFile(): Promise<void> {
-        try {
-            const buffer = await fs.readFile(__dirname + "/../bot-settings.json")
-            this.settings = JSON.parse(buffer.toString())
-        } catch (error) {
-            throw new Error(error.message)
-        }
-    }
-
     async loadSettings(): Promise<void> {
         try {
-            await this.loadSettingsFile()
 
             if (this.settings.afkPurge) {
-                const afkAction = new BotAction({ identifier: "afkPurge", privilage: 1, name: "afkPurge" }, [])
-                await this.botService.dispatch(afkAction, this.teamspeak)
+                const afkAction = new BotAction({ identifier: "afkPurge", privilage: 2, name: "afkPurge" }, [])
+                const garbageCollectionAction = new BotAction({ identifier: "garbageCollection", privilage: 2, name: "garbageCollection" }, [])
+
+                await Promise.all([afkAction, garbageCollectionAction])
             }
         } catch (error) {
 

@@ -41,5 +41,16 @@ export interface GenreCollection {
 
 export interface BotSettings {
     afkPurge: boolean,
+    afkLimit: number
 }
 
+export enum CommandIdentifiers {
+    AFK_PURGE = "afkPurge",
+    GREET = "greet",
+    KICK_ME = "kickme",
+    KICK = "kick",
+    SNAP = "snap",
+    MOVIE = "movie",
+    REMINDER = "reminder",
+    GARBAGE_COLLECT = "GarbageCollect"
+}

@@ -1,6 +1,5 @@
 import Service from "./service";
 import { TeamSpeak } from "ts3-nodejs-library";
-import Action from "../Types/Actions/userActions";
 import UserException from "../Exceptions/userException";
 import { ITMDB } from "../DataAccessObjects/TMDB";
 import { IReminderDB } from "../DataAccessObjects/reminderDB";
@@ -8,6 +7,7 @@ import Reminder from "../Types/Reminders/reminder";
 import { injectable, inject } from "inversify";
 import Types from "../inversifyTypes";
 import UserAction from "../Types/Actions/userActions";
+import { Command } from "ts3-nodejs-library/lib/transport/Command";
 
 /**
  * @class
@@ -56,6 +56,7 @@ export class ClientService implements IClientService {
 
 
     }
+
     async removeReminder(action: UserAction, teamspeak: TeamSpeak): Promise<void> {
         try {
 
@@ -72,13 +73,16 @@ export class ClientService implements IClientService {
 
     async listAllReminders(action: UserAction, teamspeak: TeamSpeak): Promise<void> {
         try {
-            const reminders = await this.reminderDB.getAllReminders()
-            if (!reminders.length) throw new Error("No reminders were found.")
+            await Promise.resolve().then(async _ => {
 
-            for (let reminder of reminders) {
-                const message = `${reminder.id}         ${reminder.message}         ${reminder.timeout / 1000}`
-                await teamspeak.sendTextMessage(action.invoker.cid, action.targetmode, message)
-            }
+                const reminders = await this.reminderDB.getAllRemindersFrom(action.invoker.clid)
+                if (!reminders.length) throw new Error("No reminders were found.")
+
+                for (let reminder of reminders) {
+                    const message = `${reminder.id}         ${reminder.message}         ${reminder.timeout / 1000}`
+                    await teamspeak.sendTextMessage(action.invoker.cid, action.targetmode, message)
+                }
+            })
         } catch (error) {
             throw new UserException("Error: " + error.message, action.invoker, action.targetmode)
         }
@@ -86,23 +90,21 @@ export class ClientService implements IClientService {
 
     async getRandomMovie(action: UserAction, teamspeak: TeamSpeak): Promise<void> {
         try {
-
             if (!action.commandArguments.length) throw new Error("No Genre provided.")
-            for (let genre of this.tmdb.genreList.genres) {
-                if (genre.name.toLowerCase() === action.commandArguments[0]) {
-                    const movies = await this.tmdb.getMoviesByGenre(genre)
-                    const randomNumber = Math.abs(Math.floor(Math.random() * movies.results.length - 1))
-                    const randomMovie = movies.results[randomNumber]
-                    const message = `${randomMovie.original_title} ${randomMovie.release_date.slice(0, 4)}  score: ${randomMovie.vote_average}  `
-                    await teamspeak.sendTextMessage(action.invoker.cid, action.targetmode, message)
-                    return
+            await Promise.resolve().then(async () => {
+                for (let genre of this.tmdb.genreList.genres) {
+                    if (genre.name.toLowerCase() === action.commandArguments[0]) {
+                        const movies = await this.tmdb.getMoviesByGenre(genre)
+                        const randomNumber = Math.abs(Math.floor(Math.random() * movies.results.length - 1))
+                        const randomMovie = movies.results[randomNumber]
+                        const message = `${randomMovie.original_title} ${randomMovie.release_date.slice(0, 4)}  score: ${randomMovie.vote_average}  `
+                        await teamspeak.sendTextMessage(action.invoker.cid, action.targetmode, message)
+                        return
+                    }
                 }
-            }
-
-            await teamspeak.sendTextMessage(action.invoker.cid, action.targetmode, "Genre Not Found")
-            return
+                await teamspeak.sendTextMessage(action.invoker.cid, action.targetmode, "Genre Not Found")
+            })
         } catch (error) {
-            console.log(error)
             throw new UserException("Error: " + error.message, action.invoker, action.targetmode);
         }
     }
@@ -125,18 +127,20 @@ export class ClientService implements IClientService {
 
             const time = parseInt(action.commandArguments[1]) * 60 * 1000
             const reminder = new Reminder(time, action.commandArguments[2])
-            await this.reminderDB.addReminder(reminder)
-            await reminder.start(async () => {
-                await teamspeak.sendTextMessage(action.invoker.cid, action.targetmode, `Reminder from ${action.invoker.nickname}: ${reminder.message}`)
-                await this.reminderDB.removeReminder(reminder.id)
+            this.reminderDB.addReminder(reminder)
+            reminder.start(async () => {
+                try {
+                    await teamspeak.sendTextMessage(action.invoker.cid, 1, `Reminder from ${action.invoker.nickname}: ${reminder.message}`)
+                    await this.reminderDB.removeReminder(reminder.id)
+                } catch (error) {
+                    console.log(error)
+                }
             })
-            await teamspeak.sendTextMessage(action.invoker.cid, action.targetmode, "Reminder has been successfully created.")
+            await teamspeak.sendTextMessage(action.invoker.cid, action.targetmode, `Reminder has been successfully created. You will be reminded in ${action.commandArguments[1]} minute(s).`)
         } catch (error) {
             throw new UserException("Error: " + error.message, action.invoker, action.targetmode)
         }
     }
-
-
 }
 
 export interface IClientService extends Service {

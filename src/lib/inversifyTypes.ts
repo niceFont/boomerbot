@@ -8,6 +8,7 @@ const Types = {
     TeamSpeak: Symbol.for("Teamspeak"),
     TMDBMock: Symbol.for("TMDBMock"),
     TaskDB: Symbol.for("TaskDB"),
+    BotSettings: Symbol.for("BotSettings"),
 }
 
 export default Types
