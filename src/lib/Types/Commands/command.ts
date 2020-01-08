@@ -20,7 +20,7 @@ class Command {
     static async getCommandInfo(commandIdentifier: string): Promise<Command> {
 
         try {
-            const buffer = await fs.readFile(__dirname + "/../../bot-commands.json")
+            const buffer = await fs.readFile(__dirname + "/../../../../bot-commands.json")
 
             const commands = JSON.parse(buffer.toString())
             if (commandIdentifier in commands) return new Command(commandIdentifier, commands[commandIdentifier].privilages)

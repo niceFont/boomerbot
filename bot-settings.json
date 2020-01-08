@@ -1,3 +1,5 @@
 {
-    "afkPurge": true
+    "afkPurge": true,
+    "afkLimit": 5,
+    "afkWarn": true
 }
